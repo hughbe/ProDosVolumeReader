@@ -1,0 +1,229 @@
+# MfsReader
+
+A lightweight .NET library for reading classic Macintosh File System (MFS) disk images and extracting their contents. MFS was the original file system used by early Macintosh computers (1984-1985) before being replaced by HFS.
+
+## Features
+
+- Read MFS disk images (e.g., 400K floppy disk images)
+- Enumerate all files in an MFS volume
+- Extract both data and resource forks from files
+- Access file metadata (name, type, creator, dates, sizes)
+- Support for .NET 9.0
+- Zero external dependencies
+
+## Installation
+
+Add the project reference to your .NET application:
+
+```sh
+dotnet add reference path/to/MfsReader.csproj
+```
+
+Or, if published on NuGet:
+
+```sh
+dotnet add package MfsReader
+```
+
+## Usage
+
+### Reading an MFS Disk Image
+
+```csharp
+using MfsReader;
+
+// Open a disk image file
+using var stream = File.OpenRead("mfs400K.dsk");
+
+// Create an MFS volume reader
+var volume = new MFSVolume(stream);
+
+// Get volume information
+var mdb = volume.MasterDirectoryBlock;
+Console.WriteLine($"Volume Name: {mdb.VolumeName}");
+Console.WriteLine($"Created: {mdb.CreationDate}");
+Console.WriteLine($"Last Backup: {mdb.LastBackupDate}");
+```
+
+### Enumerating Files
+
+```csharp
+// Get all files in the volume
+var files = volume.GetEntries();
+
+foreach (var file in files)
+{
+    Console.WriteLine($"File: {file.Name}");
+    Console.WriteLine($"  Type: {file.FileType}");
+    Console.WriteLine($"  Creator: {file.Creator}");
+    Console.WriteLine($"  Data Fork: {file.DataForkSize} bytes");
+    Console.WriteLine($"  Resource Fork: {file.ResourceForkSize} bytes");
+    Console.WriteLine($"  Created: {file.CreationDate}");
+    Console.WriteLine($"  Modified: {file.LastModificationDate}");
+}
+```
+
+### Extracting File Data
+
+```csharp
+// Extract data fork
+foreach (var file in volume.GetEntries())
+{
+    // Get data fork as byte array
+    byte[] dataFork = volume.GetDataForkData(file);
+    File.WriteAllBytes($"{file.Name}.data", dataFork);
+    
+    // Get resource fork as byte array
+    byte[] resourceFork = volume.GetResourceForkData(file);
+    File.WriteAllBytes($"{file.Name}.rsrc", resourceFork);
+}
+```
+
+### Streaming File Data
+
+```csharp
+// Stream file data to an output stream
+var file = volume.GetEntries().First();
+
+using var outputStream = File.Create("output.bin");
+volume.GetDataForkData(file, outputStream);
+```
+
+## API Overview
+
+### MFSVolume
+
+The main class for reading MFS volumes.
+
+- `MFSVolume(Stream stream)` - Opens an MFS volume from a stream
+- `MasterDirectoryBlock` - Gets the master directory block (volume metadata)
+- `AllocationBlockMap` - Gets the allocation block map of the volume
+- `GetEntries()` - Enumerates all file entries in the volume
+- `GetDataForkData(file)` - Reads the data fork as a byte array
+- `GetDataForkData(file, outputStream)` - Streams the data fork to an output stream
+- `GetResourceForkData(file)` - Reads the resource fork as a byte array
+- `GetResourceForkData(file, outputStream)` - Streams the resource fork to an output stream
+- `GetFileData(file, forkType)` - Reads file data as a byte array
+- `GetFileData(file, outputStream, forkType)` - Streams file data to an output stream
+
+### MFSMasterDirectoryBlock
+
+Contains volume-level metadata:
+
+- `Signature` - Volume signature (0xD2D7 for MFS)
+- `VolumeName` - Name of the volume
+- `CreationDate` - Volume creation date
+- `LastBackupDate` - Volume last backup date
+- `Attributes` - Volume attributes/flags
+- `NumberOfFiles` - Number of files in the volume
+- `FileDirectoryStart` - Starting sector of the file directory
+- `FileDirectoryLength` - Length of the file directory in sectors
+- `NumberOfAllocationBlocks` - Number of allocation blocks on the volume
+- `AllocationBlockSize` - Size of allocation blocks in bytes
+- `ClumpSize` - Clump size in bytes
+- `AllocationBlockStart` - Starting sector of the first allocation block
+- `NextFileNumber` - Next file number to be assigned
+- `FreeAllocationBlocks` - Number of free allocation blocks
+
+### MFSFileDirectoryBlock
+
+Represents a file entry in the MFS volume:
+
+- `Name` - File name (up to 255 characters)
+- `Flags` - Entry flags (used, locked)
+- `Version` - Version number
+- `FileType` - Four-character file type code
+- `Creator` - Four-character creator code
+- `FinderFlags` - Finder flags
+- `ParentLocationX` - X-coordinate of file's location in parent
+- `ParentLocationY` - Y-coordinate of file's location in parent
+- `FolderNumber` - Folder number
+- `FileNumber` - File number
+- `CreationDate` - File creation date
+- `LastModificationDate` - File last modified date
+- `DataForkAllocationBlock` - Starting allocation block for data fork
+- `DataForkSize` - Size of the data fork in bytes
+- `DataForkAllocatedSize` - Allocated size of the data fork in bytes
+- `ResourceForkAllocationBlock` - Starting allocation block for resource fork
+- `ResourceForkSize` - Size of the resource fork in bytes
+- `ResourceForkAllocatedSize` - Allocated size of the resource fork in bytes
+
+## Building
+
+Build the project using the .NET SDK:
+
+```sh
+dotnet build
+```
+
+Run tests:
+
+```sh
+dotnet test
+```
+
+## MFSDumper CLI
+
+Extract an MFS disk image to a directory using the dumper tool.
+
+### Install/Build
+
+```sh
+dotnet build dumper/MFSDumper.csproj -c Release
+```
+
+### Usage
+
+```sh
+MFSDumper \
+    /path/to/disk.dsk \
+    -o /path/to/output \
+    [--data-only | --resource-only]
+```
+
+- Input: Path to the `.dsk` image.
+- Output: Destination directory for extracted files.
+- Fork selection:
+    - `--data-only`: Extract only data forks.
+    - `--resource-only`: Extract only resource forks.
+
+Files are written as `<Name>.data` and `<Name>.res`, with `/` and `:` replaced by `_` for compatibility.
+
+## Requirements
+
+- .NET 9.0 or later
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+Copyright (c) 2026 Hugh Bellamy
+
+## About MFS
+
+The Macintosh File System (MFS) was the original file system for the Macintosh computer, introduced in 1984. Key characteristics:
+
+- Flat file structure (no subdirectories/folders)
+- Support for data and resource forks
+- Maximum of 128 files per volume
+- Primarily used on 400K floppy disks
+- Replaced by HFS (Hierarchical File System) in 1985
+
+## Related Projects
+
+- [MfsReader](https://github.com/hughbe/MfsReader) - Reader for MFS (Macintosh File System) volumes
+- [HfsReader](https://github.com/hughbe/HfsReader) - Reader for HFS (Hierarchical File System) volumes
+
+## Documentation
+### ProDOS File System
+- ProDOS 8 Technical Note #25 https://prodos8.com/docs/technote/25/
+### Apple IIgsResource Forks
+- https://ciderpress2.com/formatdoc/ResourceFork-notes.html
+- Apple IIGS Toolbox Reference, Volume 3: https://dn790003.ca.archive.org/0/items/Apple_IIGS_Toolbox_Reference_vol_3/Apple_IIGS_Toolbox_Reference_vol_3.pdf
+- Apple IIGS Technical Note #76: https://web.archive.org/web/20050425130811/https://web.pdx.edu/~heiss/technotes/iigs/tn.iigs.076.html
+- Apple IIGS Technical Note #100: https://web.archive.org/web/20050425130811/https://web.pdx.edu/~heiss/technotes/iigs/tn.iigs.100.html
+- Apple IIGS Toolbox Changes
+for System Software 6.0: https://apple2.gs/downloads/library/Apple%20IIgs%20Toolbox%20Changes%20for%20System%20Software%206.0.pdf
+- Apple IIGS Technical Note #24: https://mirrors.apple2.org.za/Apple%20II%20Documentation%20Project/Computers/Apple%20II/Apple%20IIGS/Documentation/Apple%20IIGS%20Technical%20Notes%2011-25.pdf
+- Apple IIGS Technical Note #66: https://web.archive.org/web/20051108132137/https://web.pdx.edu/~heiss/technotes/ftyp/ftn.42.xxxx.html
+- Prez: https://github.com/ksherlock/prez

@@ -1,0 +1,56 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", "{66320409-64EC-F7C5-3DEF-65E7510DAAD1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "dumper", "dumper", "{6A12E86D-DB6E-91B4-263F-3EB1B9A58A55}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProDosVolumeReader.Tests", "tests\ProDosVolumeReader.Tests.csproj", "{D417C402-C06A-FF95-CB8A-03502CE11999}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProDosVolumeReader.Benchmarks", "benchmarks\ProDosVolumeReader.Benchmarks.csproj", "{EE48CABB-A0BF-003A-5270-6B7C6CB9698C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProDosVolumeDumper", "dumper\ProDosVolumeDumper.csproj", "{B476594B-C05D-775D-4899-E590D4B55069}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProDosVolumeReader", "src\ProDosVolumeReader.csproj", "{21D1F317-9386-04BA-7A1C-E1A74B06C4D3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D417C402-C06A-FF95-CB8A-03502CE11999}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D417C402-C06A-FF95-CB8A-03502CE11999}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D417C402-C06A-FF95-CB8A-03502CE11999}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D417C402-C06A-FF95-CB8A-03502CE11999}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE48CABB-A0BF-003A-5270-6B7C6CB9698C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE48CABB-A0BF-003A-5270-6B7C6CB9698C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE48CABB-A0BF-003A-5270-6B7C6CB9698C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE48CABB-A0BF-003A-5270-6B7C6CB9698C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B476594B-C05D-775D-4899-E590D4B55069}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B476594B-C05D-775D-4899-E590D4B55069}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B476594B-C05D-775D-4899-E590D4B55069}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B476594B-C05D-775D-4899-E590D4B55069}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21D1F317-9386-04BA-7A1C-E1A74B06C4D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21D1F317-9386-04BA-7A1C-E1A74B06C4D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21D1F317-9386-04BA-7A1C-E1A74B06C4D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21D1F317-9386-04BA-7A1C-E1A74B06C4D3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D417C402-C06A-FF95-CB8A-03502CE11999} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{EE48CABB-A0BF-003A-5270-6B7C6CB9698C} = {66320409-64EC-F7C5-3DEF-65E7510DAAD1}
+		{B476594B-C05D-775D-4899-E590D4B55069} = {6A12E86D-DB6E-91B4-263F-3EB1B9A58A55}
+		{21D1F317-9386-04BA-7A1C-E1A74B06C4D3} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {54A190BF-409C-424B-ACA0-7A3C8F51360B}
+	EndGlobalSection
+EndGlobal
