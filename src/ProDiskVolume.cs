@@ -256,11 +256,11 @@ public class ProDiskVolume
 
         for (int i = 0; i < 256 && remaining > 0; i++)
         {
-            byte lowByte = indexBuffer[i];
-            byte highByte = indexBuffer[256 + i];
-            ushort dataBlockNumber = (ushort)(lowByte | (highByte << 8));
+            var lowByte = indexBuffer[i];
+            var highByte = indexBuffer[256 + i];
+            var dataBlockNumber = (ushort)(lowByte | (highByte << 8));
 
-            int bytesToWrite = Math.Min(remaining, 512);
+            var bytesToWrite = Math.Min(remaining, 512);
             
             // A block pointer of 0 indicates a sparse (unallocated) block.
             // In this case, we write zeros instead of reading from disk.
@@ -273,7 +273,7 @@ public class ProDiskVolume
             }
             else
             {
-                int written = WriteDataBlock(dataBlockNumber, outputStream, remaining);
+                var written = WriteDataBlock(dataBlockNumber, outputStream, bytesToWrite);
                 totalWritten += written;
                 remaining -= written;
             }
@@ -478,16 +478,26 @@ public class ProDiskVolume
     /// <exception cref="IOException">Thrown if there is an error reading from the stream.</exception>
     private void ReadBlock(ushort blockNumber, Span<byte> buffer)
     {
-        var blockOffsetWithinStream = _streamOffset + (blockNumber * BlockSize);
-        if (blockOffsetWithinStream > _stream.Length - BlockSize)
+        var blockOffsetWithinStream = _streamOffset + (blockNumber * (long)BlockSize);
+
+        // If the block lies beyond the end of the provided stream but the
+        // volume header indicates the disk is larger, treat the missing block
+        // as a sparse (zero-filled) block.
+        if (blockOffsetWithinStream < 0 || blockOffsetWithinStream + BlockSize > _stream.Length)
         {
-            throw new IOException("Block is out of bounds.");
+            if (blockNumber < VolumeDirectoryHeader.TotalBlocks)
+            {
+                buffer.Clear();
+                return;
+            }
+
+            throw new IOException($"Block {blockNumber} is out of bounds (offset {blockOffsetWithinStream}, stream length {_stream.Length}).");
         }
 
         _stream.Seek(blockOffsetWithinStream, SeekOrigin.Begin);
         if (_stream.Read(buffer) != buffer.Length)
         {
-            throw new IOException("Failed to read block from stream.");
+            throw new IOException($"Failed to read block {blockNumber} from stream.");
         }
     }
 }

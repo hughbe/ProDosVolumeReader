@@ -11,15 +11,12 @@ public class ProDiskVolumeTests
     {
         "IIgsChildrensWritingCenter.dsk.po",
         "IIgsChildrensWritingCenterStorage2.dsk.po",
-        //"appleIISetup.dsk.po",
         "brccGs77PrintShopGS.dsk.po",
         "brccGs78PrintshopFiles.dsk.po",
         "fonts.dsk.po",
         "gs-os5.02.dsk.po",
         "gs-os5.02SystemTools.dsk.po",
         "install.dsk.po",
-        //"paulsGP_MIMDBackupEmu_disk.dsk.po",
-        //"paulsMaster.dsk.po",
         "pdeGraphicsEducationThemes.dsk.po",
         "printShopGS1.1.dsk.po",
         "printshopGSGraphics.dsk.po",
@@ -29,20 +26,38 @@ public class ProDiskVolumeTests
         "psGraphicsSignsPeopleMapsSportsAnimalsMix.dsk.po",
         "psGraphicsSportsHobbiesGames.dsk.po",
         "psGraphicsSymbolsEmblemsLogos.dsk.po",
-        //"sdasCopyFromJose.dsk.po",
         "shanghai.dsk.po",
         "systemDisk.dsk.po",
         "systemTools2.dsk.po",
         "whereInTimeIsCS6T.dsk.po",
-        //TODO: "whereInTimeIsCarmenSandiego.dsk.po",
+        "whereInTimeIsCarmenSandiego.dsk.po",
         "gsosinstalldisks/INSTALL.dsk",
         "gsosinstalldisks/SYSTEM.DISK.dsk",
         "gsosinstalldisks/SYSTEMTOOLS1.dsk",
         "gsosinstalldisks/SYSTEMTOOLS2.dsk",
         "gsosinstalldisks/FONTS.dsk",
         "gsosinstalldisks/SYNTHLAB.dsk",
-        //"ProDOS_2_4.dsk", // TODO: TRID says it's ProDOS volume, but fails to open.
-        "Word Perfect 2.1/Word Perfect Demo.po"
+        "Word Perfect 2.1/Word Perfect Demo.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/Fonts.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/Install.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/Live.Install.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/System.Disk.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/SystemTools1.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/SystemTools2.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/Live.Install.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/Fonts.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/Fonts2.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/Install.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/synthLAB.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/System.Disk.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/SystemTools1.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/SystemTools2.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.4/PO Disk Images/SystemTools3.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple IIgs System Disk 2.0.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple IIgs System Disk 3.1.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple IIgs System Disk 4.0.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Apple IIgs System Tools 4.0.po",
+        "ftp.apple.asimov.net/images/gs/os/gsos/Brutal Deluxe Software_File System Translators.PO",
     };
 
     [Theory]
@@ -67,6 +82,19 @@ public class ProDiskVolumeTests
         {
             ExportEntry(image, entry, outputDirectory);
         }
+    }
+
+    [Theory]
+    [InlineData("appleIISetup.dsk.po")]
+    [InlineData("paulsGP_MIMDBackupEmu_disk.dsk.po")]
+    [InlineData("paulsMaster.dsk.po")]
+    [InlineData("sdasCopyFromJose.dsk.po")]
+    [InlineData("ProDOS_2_4.dsk")]
+    public void Ctor_NotProDosVolume_ThrowsArgumentException(string diskName)
+    {
+        var filePath = Path.Combine("Samples", "NotProDos", diskName);
+        using var stream = File.OpenRead(filePath);
+        Assert.Throws<ArgumentException>("data", () => new ProDiskVolume(stream));
     }
 
     private static void ExportEntry(ProDiskVolume disk, FileEntry entry, string outputDirectory)
@@ -592,5 +620,27 @@ public class ProDiskVolumeTests
     public void Ctor_NullStream_ThrowsArgumentNullException()
     {
         Assert.Throws<ArgumentNullException>("stream", () => new ProDiskVolume(null!));
+    }
+
+    [Fact]
+    public void CreationDate_Get_CorrectDate()
+    {
+        var filePath = Path.Combine("Samples", "whereInTimeIsCarmenSandiego.dsk.po");
+        using var stream = File.OpenRead(filePath);
+        var volume = new ProDiskVolume(stream);
+
+        var entries = volume.EnumerateRootContents().ToList();
+        Assert.Equal(new DateTime(1989, 10, 30, 15, 15, 0), entries.Single(e => e.FileName == "A").CreationDate);
+    }
+
+    [Fact]
+    public void LastModificationDate_Get_CorrectDate()
+    {
+        var filePath = Path.Combine("Samples", "whereInTimeIsCarmenSandiego.dsk.po");
+        using var stream = File.OpenRead(filePath);
+        var volume = new ProDiskVolume(stream);
+
+        var entries = volume.EnumerateRootContents().ToList();
+        Assert.Equal(new DateTime(1989, 10, 30, 16, 01, 0), entries.Single(e => e.FileName == "A").LastModificationDate);
     }
 }

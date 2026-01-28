@@ -64,6 +64,12 @@ public readonly struct ProDosDateTime
         var minute = time & 0x3F;
         var hour = (time >> 8) & 0x1F;
 
-        return new DateTime(year, month, day, hour, minute, 0);
+        return new DateTime(1900 + year, month, day, hour, minute, 0);
     }
+
+    /// <summary>
+    /// Implicit conversion from <see cref="ProDosDateTime"/> to <see cref="DateTime"/>.
+    /// </summary>
+    /// <param name="prodosDateTime">The ProDOS date/time.</param>
+    public static implicit operator DateTime(ProDosDateTime prodosDateTime) => prodosDateTime.ToDateTime();
 }
