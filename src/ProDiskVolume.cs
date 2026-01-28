@@ -478,6 +478,11 @@ public class ProDiskVolume
     /// <exception cref="IOException">Thrown if there is an error reading from the stream.</exception>
     private void ReadBlock(ushort blockNumber, Span<byte> buffer)
     {
+        if (VolumeDirectoryHeader.TotalBlocks != 0 && blockNumber > VolumeDirectoryHeader.TotalBlocks)
+        {
+            throw new IOException($"Block number {blockNumber} is out of bounds for this volume.");
+        }
+
         var blockOffsetWithinStream = _streamOffset + (blockNumber * (long)BlockSize);
 
         // If the block lies beyond the end of the provided stream but the
@@ -485,7 +490,7 @@ public class ProDiskVolume
         // as a sparse (zero-filled) block.
         if (blockOffsetWithinStream < 0 || blockOffsetWithinStream + BlockSize > _stream.Length)
         {
-            if (blockNumber < VolumeDirectoryHeader.TotalBlocks)
+            if (VolumeDirectoryHeader.TotalBlocks != 0 && blockNumber < VolumeDirectoryHeader.TotalBlocks)
             {
                 buffer.Clear();
                 return;
