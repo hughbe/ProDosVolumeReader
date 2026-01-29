@@ -95,7 +95,7 @@ sealed class ExtractCommand : AsyncCommand<ExtractSettings>
             FileType.PascalText => ".ptx",
             FileType.PascalData => ".pda",
             FileType.GraphicsScreen => ".pic",
-            FileType.ProDosSystem => ".sys",
+            FileType.ProDos8System or FileType.ProDos16System => ".sys",
             _ => ".dat"
         };
 
