@@ -38,6 +38,7 @@ public class ProDiskVolumeTests
         "gsosinstalldisks/FONTS.dsk",
         "gsosinstalldisks/SYNTHLAB.dsk",
         "Word Perfect 2.1/Word Perfect Demo.po",
+        "ftp.apple.asimov.net/images/apple1/Apple-1 Software.po",
         "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/Fonts.po",
         "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/Install.po",
         "ftp.apple.asimov.net/images/gs/os/gsos/Apple_IIGS_System_6.0.3/Live.Install.po",
