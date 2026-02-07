@@ -111,7 +111,7 @@ public readonly struct CDEVFlagsRecord
             throw new ArgumentException("Author name length exceeds maximum of 32 characters.", nameof(data));
         }
 
-        AuthorName = Encoding.ASCII.GetString(data.Slice(offset, authorNameLength));;
+        AuthorName = Encoding.ASCII.GetString(data.Slice(offset, authorNameLength));
         offset += 32;
 
         byte versionNameLength = data[offset];
@@ -122,7 +122,7 @@ public readonly struct CDEVFlagsRecord
             throw new ArgumentException("Version name length exceeds maximum of 8 characters.", nameof(data));
         }
         
-        VersionName = Encoding.ASCII.GetString(data.Slice(offset, versionNameLength));;
+        VersionName = Encoding.ASCII.GetString(data.Slice(offset, versionNameLength));
         offset += 8;
 
         Debug.Assert(offset <= data.Length, "Did not consume all data for CDEVFlagsRecord");

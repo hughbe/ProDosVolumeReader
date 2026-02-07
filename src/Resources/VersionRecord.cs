@@ -112,7 +112,7 @@ public readonly struct VersionRecord
             throw new ArgumentException("VersionRecord contains invalid more info length.", nameof(data));
         }
 
-        MoreInfo = Encoding.ASCII.GetString(data.Slice(offset, moreInfoLength));;
+        MoreInfo = Encoding.ASCII.GetString(data.Slice(offset, moreInfoLength));
         offset += moreInfoLength;
 
         Debug.Assert(offset <= data.Length, "Did not consume all VersionRecord data.");

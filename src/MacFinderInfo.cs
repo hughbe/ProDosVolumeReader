@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
+using ProDosVolumeReader.Utilities;
 
 namespace ProDosVolumeReader;
 
@@ -28,12 +29,12 @@ public readonly struct MacFinderInfo
     /// <summary>
     /// Gets the file type as a 4-character OSType.
     /// </summary>
-    public uint FileType { get; }
+    public String4 FileType { get; }
 
     /// <summary>
     /// Gets the file creator as a 4-character OSType.
     /// </summary>
-    public uint Creator { get; }
+    public String4 Creator { get; }
 
     /// <summary>
     /// Gets the Finder flags.
@@ -69,12 +70,12 @@ public readonly struct MacFinderInfo
         int offset = 0;
 
         // fdType:     4 bytes - file type
-        FileType = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset, 4));
-        offset += 4;
+        FileType = new String4(data.Slice(offset, String4.Size));
+        offset += String4.Size;
 
         // fdCreator:  4 bytes - file creator
-        Creator = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(offset, 4));
-        offset += 4;
+        Creator = new String4(data.Slice(offset, String4.Size));
+        offset += String4.Size;
 
         // fdFlags:    2 bytes - Finder flags
         Flags = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(offset, 2));
@@ -92,27 +93,5 @@ public readonly struct MacFinderInfo
         offset += 2;
 
         Debug.Assert(offset == data.Length, "Did not consume all data for MacFinderInfo");
-    }
-
-    /// <summary>
-    /// Gets the file type as a string.
-    /// </summary>
-    public string FileTypeString => GetOSTypeString(FileType);
-
-    /// <summary>
-    /// Gets the creator as a string.
-    /// </summary>
-    public string CreatorString => GetOSTypeString(Creator);
-
-    private static string GetOSTypeString(uint osType)
-    {
-        Span<byte> bytes =
-        [
-            (byte)((osType >> 24) & 0xFF),
-            (byte)((osType >> 16) & 0xFF),
-            (byte)((osType >> 8) & 0xFF),
-            (byte)(osType & 0xFF),
-        ];
-        return Encoding.ASCII.GetString(bytes);
     }
 }

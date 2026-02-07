@@ -102,7 +102,7 @@ public class ProDiskVolumeTests
     {
         Directory.CreateDirectory(outputDirectory);
 
-        string safeFileName = string.Join("_", entry.FileName.Split(Path.GetInvalidFileNameChars()));
+        string safeFileName = string.Join("_", entry.FileName.ToString().Split(Path.GetInvalidFileNameChars()));
         string outputFilePath = Path.Combine(outputDirectory, safeFileName);
 
         if (entry.StorageType == StorageType.Subdirectory)

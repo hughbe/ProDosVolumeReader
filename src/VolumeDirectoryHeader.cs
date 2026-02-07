@@ -33,7 +33,7 @@ public readonly struct VolumeDirectoryHeader
     /// <summary>
     /// Gets the file name bytes.
     /// </summary>
-    public ByteArray15 FileNameBytes { get; }
+    public String15 FileNameBytes { get; }
 
     /// <summary>
     /// Gets the file name.
@@ -159,15 +159,15 @@ public readonly struct VolumeDirectoryHeader
         // filename (volume name) syntax explained in Chapter 2. The name does not
         // begin with the slash that usually precedes volume names. This field can
         // be changed by the RENAME call.
-        FileNameBytes = new ByteArray15(data.Slice(offset, ByteArray15.Size));
-        offset += ByteArray15.Size;
+        FileNameBytes = new String15(data.Slice(offset, String15.Size));
+        offset += String15.Size;
 
         // reserved (8 bytes): Reserved for future expansion of the file system.
         // However, this has been documented and reverse engineered, e.g.
         // https://ciderpress2.com/formatdoc/ProDOS-notes.html
 
         // (reserved, should be zeroes)
-        Reserved = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));;
+        Reserved = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
         offset += 2;
 
         // (undocumented? GS/OS feature) modification date/time
@@ -175,7 +175,7 @@ public readonly struct VolumeDirectoryHeader
         offset += ProDosDateTime.Size;
 
         // lower-case flags (see TN.GSOS.008)
-        LowercaseFlags = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));;
+        LowercaseFlags = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
         offset += 2;
 
         // creation (4 bytes): The date and time at which this volume was initialized.
@@ -213,7 +213,7 @@ public readonly struct VolumeDirectoryHeader
         // file_count (2 bytes): The number of active file entries in this directory
         // file. An active file is one whose storage_type is not 0. See Section B.2.4
         // for a description of file entries.
-        FileCount = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));;
+        FileCount = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
         offset += 2;
 
         // bit_map_pointer (2 bytes): The block address of the first block of the
@@ -225,11 +225,11 @@ public readonly struct VolumeDirectoryHeader
         // the block is free; 0 means it is in use. If the number of blocks used by
         // all files on the volume is not the same as the number recorded in the bit
         // map, the directory structure of the volume has been damaged.
-        BitMapPointer = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));;
+        BitMapPointer = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
         offset += 2;
 
         // total_blocks (2 bytes): The total number of blocks on the volume.
-        TotalBlocks = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));;
+        TotalBlocks = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
         offset += 2;
 
         Debug.Assert(offset == data.Length, "Did not consume all bytes for VolumeDirectoryHeader");

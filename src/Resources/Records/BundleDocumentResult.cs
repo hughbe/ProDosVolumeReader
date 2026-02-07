@@ -83,13 +83,13 @@ public readonly struct BundleDocumentResult
         LargeIconResourceID = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4));
         offset += 4;
         
-        LargeIconResourceHandle = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4));;
+        LargeIconResourceHandle = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4));
         offset += 4;
 
         SmallIconResourceID = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4));
         offset += 4;
 
-        SmallIconResourceHandle = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4));;
+        SmallIconResourceHandle = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4));
         offset += 4;
 
         byte typeLength = data[offset];

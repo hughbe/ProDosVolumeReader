@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Text;
+using ProDosVolumeReader.Utilities;
 
 namespace ProDosVolumeReader.Resources.Records;
 
@@ -22,7 +23,7 @@ public readonly struct BundleDocumentModificationDate
     /// <summary>
     /// Gets the date value as a string.
     /// </summary>
-    public string Value { get; }
+    public String8 Value { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BundleDocumentModificationDate"/> struct.
@@ -42,8 +43,8 @@ public readonly struct BundleDocumentModificationDate
         Comparison = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(offset, 2));
         offset += 2;
 
-        Value = Encoding.ASCII.GetString(data.Slice(offset, 8));
-        offset += 8;
+        Value = new String8(data.Slice(offset, String8.Size));
+        offset += String8.Size;
 
         Debug.Assert(offset == data.Length, "Did not consume all data for BundleDocumentModificationDate.");
     }

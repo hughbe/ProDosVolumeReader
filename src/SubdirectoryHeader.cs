@@ -34,19 +34,7 @@ public readonly struct SubdirectoryHeader
     /// <summary>
     /// Gets the file name bytes.
     /// </summary>
-    public ByteArray15 FileNameBytes { get; }
-
-    /// <summary>
-    /// Gets the subdirectory's name.
-    /// </summary>
-    public string FileName
-    {
-        get
-        {
-            var nameBytes = FileNameBytes.AsSpan()[..NameLength];
-            return Encoding.ASCII.GetString(nameBytes);
-        }
-    }
+    public String15 FileName { get; }
 
     /// <summary>
     /// Gets the reserved bytes.
@@ -133,8 +121,8 @@ public readonly struct SubdirectoryHeader
         // file_name (15 bytes): The first name_length bytes of this field contain the
         // subdirectory's name. This name must conform to the filename syntax explained
         // in Chapter 2.
-        FileNameBytes = new ByteArray15(data.Slice(offset, ByteArray15.Size));
-        offset += ByteArray15.Size;
+        FileName = new String15(data.Slice(offset, String15.Size));
+        offset += String15.Size;
 
         // reserved (8 bytes): Reserved for future expansion of the file system.
         Reserved = new ByteArray8(data.Slice(offset, ByteArray8.Size));
