@@ -10,7 +10,7 @@ public readonly struct PrintRecord
     /// <summary>
     /// Size of Print Record in bytes.
     /// </summary>
-    public const int Size = 160;
+    public const int MinSize = 160;
 
     /// <summary>
     /// Gets the data.
@@ -24,16 +24,16 @@ public readonly struct PrintRecord
     /// <exception cref="ArgumentException">Thrown when the data length is not equal to the expected size.</exception>
     public PrintRecord(ReadOnlySpan<byte> data)
     {
-        if (data.Length != Size)
+        if (data.Length < MinSize)
         {
-            throw new ArgumentException($"Invalid PrintRecord size. Expected {Size} bytes, got {data.Length} bytes.", nameof(data));
+            throw new ArgumentException($"Invalid PrintRecord size. Expected at least {MinSize} bytes, got {data.Length} bytes.", nameof(data));
         }
 
         // Structure documented in https://web.archive.org/web/20050425130811/https://web.pdx.edu/~heiss/technotes/iigs/tn.iigs.076.html
         int offset = 0;
 
-        Data = data.Slice(offset, Size).ToArray();
-        offset += Size;
+        Data = data.Slice(offset, data.Length).ToArray();
+        offset += data.Length;
 
         Debug.Assert(offset == data.Length, "Did not consume all data for PrintRecord.");
     }
