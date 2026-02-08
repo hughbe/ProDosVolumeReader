@@ -67,21 +67,26 @@ public class ProDiskVolumeTests
     {
         var filePath = Path.Combine("Samples", diskName);
         using var stream = File.OpenRead(filePath);
-        var image = new ProDiskVolume(stream);
+        var disk = new ProDosDisk(stream);
 
-        // Create output directory based on disk name (without extension)
-        string diskNameWithoutExtension = Path.GetFileNameWithoutExtension(diskName);
-        string outputDirectory = Path.Combine("Output", diskNameWithoutExtension);
+        Assert.NotEmpty(disk.Volumes);
 
-        // Delete the output directory if it exists
-        if (Directory.Exists(outputDirectory))
+        foreach (var image in disk.Volumes)
         {
-            Directory.Delete(outputDirectory, true);
-        }
+            // Create output directory based on disk name (without extension)
+            string diskNameWithoutExtension = Path.GetFileNameWithoutExtension(diskName);
+            string outputDirectory = Path.Combine("Output", diskNameWithoutExtension);
 
-        foreach (var entry in image.EnumerateRootContents())
-        {
-            ExportEntry(image, entry, outputDirectory);
+            // Delete the output directory if it exists
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, true);
+            }
+
+            foreach (var entry in image.EnumerateRootContents())
+            {
+                ExportEntry(image, entry, outputDirectory);
+            }
         }
     }
 
@@ -95,7 +100,7 @@ public class ProDiskVolumeTests
     {
         var filePath = Path.Combine("Samples", "NotProDos", diskName);
         using var stream = File.OpenRead(filePath);
-        Assert.Throws<ArgumentException>("data", () => new ProDiskVolume(stream));
+        Assert.Throws<ArgumentException>(() => new ProDosDisk(stream));
     }
 
     private static void ExportEntry(ProDiskVolume disk, FileEntry entry, string outputDirectory)
@@ -620,7 +625,7 @@ public class ProDiskVolumeTests
     [Fact]
     public void Ctor_NullStream_ThrowsArgumentNullException()
     {
-        Assert.Throws<ArgumentNullException>("stream", () => new ProDiskVolume(null!));
+        Assert.Throws<ArgumentNullException>("stream", () => new ProDosDisk(null!));
     }
 
     [Fact]
@@ -628,7 +633,8 @@ public class ProDiskVolumeTests
     {
         var filePath = Path.Combine("Samples", "whereInTimeIsCarmenSandiego.dsk.po");
         using var stream = File.OpenRead(filePath);
-        var volume = new ProDiskVolume(stream);
+        var disk = new ProDosDisk(stream);
+        var volume = disk.Volumes[0];
 
         var entries = volume.EnumerateRootContents().ToList();
         Assert.Equal(new DateTime(1989, 10, 30, 15, 15, 0), entries.Single(e => e.FileName == "A").CreationDate);
@@ -639,7 +645,8 @@ public class ProDiskVolumeTests
     {
         var filePath = Path.Combine("Samples", "whereInTimeIsCarmenSandiego.dsk.po");
         using var stream = File.OpenRead(filePath);
-        var volume = new ProDiskVolume(stream);
+        var disk = new ProDosDisk(stream);
+        var volume = disk.Volumes[0];
 
         var entries = volume.EnumerateRootContents().ToList();
         Assert.Equal(new DateTime(1989, 10, 30, 16, 01, 0), entries.Single(e => e.FileName == "A").LastModificationDate);

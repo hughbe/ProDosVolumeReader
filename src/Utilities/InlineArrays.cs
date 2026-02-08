@@ -4,6 +4,39 @@ using System.Runtime.InteropServices;
 namespace ProDosVolumeReader.Utilities;
 
 /// <summary>
+/// An inline array of 6 bytes.
+/// </summary>
+[InlineArray(Size)]
+public struct ByteArray6
+{
+    /// <summary>
+    /// The size of the array in bytes.
+    /// </summary>
+    public const int Size = 6;
+
+    private byte _element0;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ByteArray6"/> struct.
+    /// </summary>
+    public ByteArray6(ReadOnlySpan<byte> data)
+    {
+        if (data.Length != Size)
+        {
+            throw new ArgumentException($"Data must be exactly {Size} bytes long.", nameof(data));
+        }
+        
+        data.CopyTo(AsSpan());
+    }
+
+    /// <summary>
+    /// Gets a span over the elements of the array.
+    /// </summary>   
+    public Span<byte> AsSpan() =>
+        MemoryMarshal.CreateSpan(ref _element0, Size);
+}
+
+/// <summary>
 /// An inline array of 8 bytes.
 /// </summary>
 [InlineArray(Size)]

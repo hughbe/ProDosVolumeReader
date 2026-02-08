@@ -54,7 +54,7 @@ public readonly struct MacFinderInfo
     /// <summary>
     /// Gets the directory ID that contains the file.
     /// </summary>
-    public short Folder { get; }
+    public short FolderID { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MacFinderInfo"/> struct.
@@ -67,29 +67,31 @@ public readonly struct MacFinderInfo
             throw new ArgumentException($"Data must be exactly {Size} bytes for MacFinderInfo", nameof(data));
         }
 
+        // Structure documented in https://developer.apple.com/library/archive/documentation/mac/pdf/MacintoshToolboxEssentials.pdf
+        // 7-73
         int offset = 0;
 
-        // fdType:     4 bytes - file type
+        // file type
         FileType = new String4(data.Slice(offset, String4.Size));
         offset += String4.Size;
 
-        // fdCreator:  4 bytes - file creator
+        // file creator
         Creator = new String4(data.Slice(offset, String4.Size));
         offset += String4.Size;
 
-        // fdFlags:    2 bytes - Finder flags
+        // Finder flags
         Flags = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(offset, 2));
         offset += 2;
 
-        // fdLocation: 4 bytes - Point (v, h each 2 bytes)
+        // file's location in window
         LocationV = BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset, 2));
         offset += 2;
 
         LocationH = BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset, 2));
         offset += 2;
 
-        // fdFldr:     2 bytes - directory ID
-        Folder = BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset, 2));
+        // directory that contains file
+        FolderID = BinaryPrimitives.ReadInt16BigEndian(data.Slice(offset, 2));
         offset += 2;
 
         Debug.Assert(offset == data.Length, "Did not consume all data for MacFinderInfo");

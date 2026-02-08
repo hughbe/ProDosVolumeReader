@@ -55,7 +55,7 @@ public class ProDiskVolume
         _streamOffset = stream.Position;
 
         var streamLength = stream.Length - _streamOffset;
-        if (streamLength < MinimumVolumeSize || streamLength > MaximumVolumeSize)
+        if (streamLength < MinimumVolumeSize)
         {
             throw new ArgumentException("Stream size is not valid for a ProDos volume.", nameof(stream));
         }

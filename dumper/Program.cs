@@ -45,15 +45,22 @@ sealed class ExtractCommand : AsyncCommand<ExtractSettings>
         }
 
         await using var stream = input.OpenRead();
-        var disk = new ProDiskVolume(stream);
+        var disk = new ProDosDisk(stream);
 
-        AnsiConsole.MarkupLine($"[green]Volume[/]: {disk.VolumeDirectoryHeader.FileName}");
-        AnsiConsole.MarkupLine($"[green]Total Blocks[/]: {disk.VolumeDirectoryHeader.TotalBlocks}");
-        AnsiConsole.MarkupLine($"[green]Files[/]: {disk.VolumeDirectoryHeader.FileCount}");
+        foreach (var volume in disk.Volumes)
+        {
+            AnsiConsole.MarkupLine($"[green]Volume[/]: {volume.VolumeDirectoryHeader.FileName}");
+            AnsiConsole.MarkupLine($"[green]Total Blocks[/]: {volume.VolumeDirectoryHeader.TotalBlocks}");
+            AnsiConsole.MarkupLine($"[green]Files[/]: {volume.VolumeDirectoryHeader.FileCount}");
 
-        await ExtractDirectory(disk, outputDir.FullName, cancellationToken);
+            var volumeOutputDir = disk.Volumes.Count == 1
+                ? outputDir.FullName
+                : Path.Combine(outputDir.FullName, volume.VolumeDirectoryHeader.FileName.ToString());
 
-        AnsiConsole.MarkupLine($"[green]Extraction complete[/]: {outputDir.FullName}");
+            await ExtractDirectory(volume, volumeOutputDir, cancellationToken);
+
+            AnsiConsole.MarkupLine($"[green]Extraction complete[/]: {volumeOutputDir}");
+        }
         return 0;
     }
 

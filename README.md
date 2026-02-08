@@ -1,152 +1,136 @@
-# MfsReader
+# ProDosVolumeReader
 
-A lightweight .NET library for reading classic Macintosh File System (MFS) disk images and extracting their contents. MFS was the original file system used by early Macintosh computers (1984-1985) before being replaced by HFS.
+A lightweight .NET library for reading Apple ProDOS disk images and extracting their contents. Supports both raw ProDOS volumes and partitioned disk images (via Apple Partition Map), including Apple IIgs GS/OS features like forked files and resource forks.
 
 ## Features
 
-- Read MFS disk images (e.g., 400K floppy disk images)
-- Enumerate all files in an MFS volume
-- Extract both data and resource forks from files
-- Access file metadata (name, type, creator, dates, sizes)
+- Read ProDOS disk images (.po, .dsk, .img, .iso)
+- Automatic Apple Partition Map detection for partitioned disks (`Apple_PRODOS`)
+- Enumerate files and subdirectories
+- Extract file data (seedling, sapling, and tree storage types)
+- GS/OS forked file support (data and resource forks)
+- GS/OS resource fork parsing (icons, menus, controls, windows, fonts, sounds, and more)
+- Finder metadata (MacFinderInfo, MacExtendedFinderInfo)
 - Support for .NET 9.0
-- Zero external dependencies
 
 ## Installation
 
 Add the project reference to your .NET application:
 
 ```sh
-dotnet add reference path/to/MfsReader.csproj
+dotnet add reference path/to/ProDosVolumeReader.csproj
 ```
 
 Or, if published on NuGet:
 
 ```sh
-dotnet add package MfsReader
+dotnet add package ProDosVolumeReader
 ```
 
 ## Usage
 
-### Reading an MFS Disk Image
+### Reading a ProDOS Disk Image
 
 ```csharp
-using MfsReader;
+using ProDosVolumeReader;
 
 // Open a disk image file
-using var stream = File.OpenRead("mfs400K.dsk");
+using var stream = File.OpenRead("System.Disk.po");
 
-// Create an MFS volume reader
-var volume = new MFSVolume(stream);
+// Create a disk reader (handles partition detection automatically)
+var disk = new ProDosDisk(stream);
 
-// Get volume information
-var mdb = volume.MasterDirectoryBlock;
-Console.WriteLine($"Volume Name: {mdb.VolumeName}");
-Console.WriteLine($"Created: {mdb.CreationDate}");
-Console.WriteLine($"Last Backup: {mdb.LastBackupDate}");
+foreach (var volume in disk.Volumes)
+{
+    Console.WriteLine($"Volume: {volume.VolumeDirectoryHeader.FileName}");
+    Console.WriteLine($"Total Blocks: {volume.VolumeDirectoryHeader.TotalBlocks}");
+    Console.WriteLine($"Files: {volume.VolumeDirectoryHeader.FileCount}");
+}
 ```
 
 ### Enumerating Files
 
 ```csharp
-// Get all files in the volume
-var files = volume.GetEntries();
+var volume = disk.Volumes[0];
 
-foreach (var file in files)
+foreach (var entry in volume.EnumerateRootContents())
 {
-    Console.WriteLine($"File: {file.Name}");
-    Console.WriteLine($"  Type: {file.FileType}");
-    Console.WriteLine($"  Creator: {file.Creator}");
-    Console.WriteLine($"  Data Fork: {file.DataForkSize} bytes");
-    Console.WriteLine($"  Resource Fork: {file.ResourceForkSize} bytes");
-    Console.WriteLine($"  Created: {file.CreationDate}");
-    Console.WriteLine($"  Modified: {file.LastModificationDate}");
+    Console.WriteLine($"File: {entry.FileName} ({entry.FileType}, {entry.Eof} bytes)");
+
+    if (entry.StorageType == StorageType.Subdirectory)
+    {
+        foreach (var subEntry in volume.EnumerateSubdirectory(entry))
+        {
+            Console.WriteLine($"  {subEntry.FileName} ({subEntry.FileType}, {subEntry.Eof} bytes)");
+        }
+    }
 }
 ```
 
 ### Extracting File Data
 
 ```csharp
-// Extract data fork
-foreach (var file in volume.GetEntries())
+foreach (var entry in volume.EnumerateRootContents())
 {
-    // Get data fork as byte array
-    byte[] dataFork = volume.GetDataForkData(file);
-    File.WriteAllBytes($"{file.Name}.data", dataFork);
-    
-    // Get resource fork as byte array
-    byte[] resourceFork = volume.GetResourceForkData(file);
-    File.WriteAllBytes($"{file.Name}.rsrc", resourceFork);
+    if (entry.StorageType == StorageType.Subdirectory)
+        continue;
+
+    // Get file data as byte array
+    byte[] data = volume.GetFileData(entry);
+    File.WriteAllBytes($"{entry.FileName}.bin", data);
+
+    // Or stream to an output stream
+    using var outputStream = File.Create($"{entry.FileName}.dat");
+    volume.GetFileData(entry, outputStream);
 }
 ```
 
-### Streaming File Data
+### Working with GS/OS Forked Files
 
 ```csharp
-// Stream file data to an output stream
-var file = volume.GetEntries().First();
+foreach (var entry in volume.EnumerateRootContents())
+{
+    if (entry.StorageType != StorageType.GSOSForkedFile)
+        continue;
 
-using var outputStream = File.Create("output.bin");
-volume.GetDataForkData(file, outputStream);
+    // Extract data and resource forks separately
+    byte[] dataFork = volume.GetDataFork(entry);
+    byte[] resourceFork = volume.GetResourceFork(entry);
+
+    File.WriteAllBytes($"{entry.FileName}.data", dataFork);
+    File.WriteAllBytes($"{entry.FileName}.res", resourceFork);
+}
 ```
 
 ## API Overview
 
-### MFSVolume
+### ProDosDisk
 
-The main class for reading MFS volumes.
+Entry point for reading disk images. Automatically detects Apple Partition Maps and discovers ProDOS volumes.
 
-- `MFSVolume(Stream stream)` - Opens an MFS volume from a stream
-- `MasterDirectoryBlock` - Gets the master directory block (volume metadata)
-- `AllocationBlockMap` - Gets the allocation block map of the volume
-- `GetEntries()` - Enumerates all file entries in the volume
-- `GetDataForkData(file)` - Reads the data fork as a byte array
-- `GetDataForkData(file, outputStream)` - Streams the data fork to an output stream
-- `GetResourceForkData(file)` - Reads the resource fork as a byte array
-- `GetResourceForkData(file, outputStream)` - Streams the resource fork to an output stream
-- `GetFileData(file, forkType)` - Reads file data as a byte array
-- `GetFileData(file, outputStream, forkType)` - Streams file data to an output stream
+- `ProDosDisk(Stream stream)` - Opens a disk image, scanning for ProDOS partitions
+- `Volumes` - List of `ProDiskVolume` instances found on the disk
 
-### MFSMasterDirectoryBlock
+### ProDiskVolume
 
-Contains volume-level metadata:
+Represents a single ProDOS volume and provides access to its contents.
 
-- `Signature` - Volume signature (0xD2D7 for MFS)
-- `VolumeName` - Name of the volume
-- `CreationDate` - Volume creation date
-- `LastBackupDate` - Volume last backup date
-- `Attributes` - Volume attributes/flags
-- `NumberOfFiles` - Number of files in the volume
-- `FileDirectoryStart` - Starting sector of the file directory
-- `FileDirectoryLength` - Length of the file directory in sectors
-- `NumberOfAllocationBlocks` - Number of allocation blocks on the volume
-- `AllocationBlockSize` - Size of allocation blocks in bytes
-- `ClumpSize` - Clump size in bytes
-- `AllocationBlockStart` - Starting sector of the first allocation block
-- `NextFileNumber` - Next file number to be assigned
-- `FreeAllocationBlocks` - Number of free allocation blocks
+- `VolumeDirectoryHeader` - Volume metadata (name, creation date, total blocks, file count)
+- `EnumerateRootContents()` - Enumerates files and directories in the volume root
+- `EnumerateSubdirectory(FileEntry)` - Enumerates contents of a subdirectory
+- `GetVolumeBlockAllocationBitmap()` - Returns the volume block allocation bitmap
+- `GetFileData(FileEntry)` / `GetFileData(FileEntry, Stream)` - Reads file data
+- `GetDataFork(FileEntry)` / `GetDataFork(FileEntry, Stream)` - Reads the data fork of a GS/OS forked file
+- `GetResourceFork(FileEntry)` / `GetResourceFork(FileEntry, Stream)` - Reads the resource fork of a GS/OS forked file
 
-### MFSFileDirectoryBlock
+### Key Types
 
-Represents a file entry in the MFS volume:
-
-- `Name` - File name (up to 255 characters)
-- `Flags` - Entry flags (used, locked)
-- `Version` - Version number
-- `FileType` - Four-character file type code
-- `Creator` - Four-character creator code
-- `FinderFlags` - Finder flags
-- `ParentLocationX` - X-coordinate of file's location in parent
-- `ParentLocationY` - Y-coordinate of file's location in parent
-- `FolderNumber` - Folder number
-- `FileNumber` - File number
-- `CreationDate` - File creation date
-- `LastModificationDate` - File last modified date
-- `DataForkAllocationBlock` - Starting allocation block for data fork
-- `DataForkSize` - Size of the data fork in bytes
-- `DataForkAllocatedSize` - Allocated size of the data fork in bytes
-- `ResourceForkAllocationBlock` - Starting allocation block for resource fork
-- `ResourceForkSize` - Size of the resource fork in bytes
-- `ResourceForkAllocatedSize` - Allocated size of the resource fork in bytes
+- `VolumeDirectoryHeader` - Volume-level metadata (name, dates, total blocks, file count, bitmap pointer)
+- `FileEntry` - File or directory entry (name, type, storage type, key pointer, EOF, dates, access flags)
+- `StorageType` - Seedling, Sapling, Tree, GSOSForkedFile, Subdirectory, etc.
+- `FileType` - Text, Binary, ApplesoftProgram, IntegerBasicProgram, GraphicsScreen, System, etc.
+- `ExtendedKeyBlock` - GS/OS forked file metadata containing data and resource fork entries
+- `MacFinderInfo` / `MacExtendedFinderInfo` - Finder metadata for GS/OS files
 
 ## Building
 
@@ -162,32 +146,26 @@ Run tests:
 dotnet test
 ```
 
-## MFSDumper CLI
+## ProDosDumper CLI
 
-Extract an MFS disk image to a directory using the dumper tool.
+Extract a ProDOS disk image to a directory using the dumper tool.
 
 ### Install/Build
 
 ```sh
-dotnet build dumper/MFSDumper.csproj -c Release
+dotnet build dumper/ProDosVolumeDumper.csproj -c Release
 ```
 
 ### Usage
 
 ```sh
-MFSDumper \
-    /path/to/disk.dsk \
-    -o /path/to/output \
-    [--data-only | --resource-only]
+prodos-dumper <input> [-o|--output <directory>]
 ```
 
-- Input: Path to the `.dsk` image.
-- Output: Destination directory for extracted files.
-- Fork selection:
-    - `--data-only`: Extract only data forks.
-    - `--resource-only`: Extract only resource forks.
+- `<input>` - Path to the disk image file
+- `-o|--output` - Destination directory for extracted files (defaults to the input filename without extension)
 
-Files are written as `<Name>.data` and `<Name>.res`, with `/` and `:` replaced by `_` for compatibility.
+Files are extracted with extensions based on their ProDOS file type (.txt, .bin, .bas, .sys, etc.).
 
 ## Requirements
 
@@ -198,16 +176,6 @@ Files are written as `<Name>.data` and `<Name>.res`, with `/` and `:` replaced b
 MIT License. See [LICENSE](LICENSE) for details.
 
 Copyright (c) 2026 Hugh Bellamy
-
-## About MFS
-
-The Macintosh File System (MFS) was the original file system for the Macintosh computer, introduced in 1984. Key characteristics:
-
-- Flat file structure (no subdirectories/folders)
-- Support for data and resource forks
-- Maximum of 128 files per volume
-- Primarily used on 400K floppy disks
-- Replaced by HFS (Hierarchical File System) in 1985
 
 ## Related Projects
 
@@ -220,7 +188,7 @@ The Macintosh File System (MFS) was the original file system for the Macintosh c
 ## Documentation
 ### ProDOS File System
 - ProDOS 8 Technical Note #25 https://prodos8.com/docs/technote/25/
-### Apple IIgsResource Forks
+### Apple IIgs Resource Forks
 - https://ciderpress2.com/formatdoc/ResourceFork-notes.html
 - Apple IIGS Toolbox Reference, Volume 3: https://dn790003.ca.archive.org/0/items/Apple_IIGS_Toolbox_Reference_vol_3/Apple_IIGS_Toolbox_Reference_vol_3.pdf
 - Apple IIGS Technical Note #76: https://web.archive.org/web/20050425130811/https://web.pdx.edu/~heiss/technotes/iigs/tn.iigs.076.html
