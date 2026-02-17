@@ -1,3 +1,6 @@
+using System.Numerics;
+using System.Runtime.InteropServices;
+
 namespace ProDosVolumeReader;
 
 /// <summary>
@@ -33,26 +36,12 @@ public class VolumeBlockAllocationBitmap
     /// <summary>
     /// Gets the number of free (unallocated) blocks on the volume.
     /// </summary>
-    public int FreeBlockCount
-    {
-        get
-        {
-            int count = 0;
-            for (ushort i = 0; i < _totalBlocks; i++)
-            {
-                if (IsBlockFree(i))
-                {
-                    count++;
-                }
-            }
-            return count;
-        }
-    }
+    public int FreeBlockCount { get; }
 
     /// <summary>
     /// Gets the number of used (allocated) blocks on the volume.
     /// </summary>
-    public int UsedBlockCount => _totalBlocks - FreeBlockCount;
+    public int UsedBlockCount { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="VolumeBlockAllocationBitmap"/> class.
@@ -63,6 +52,39 @@ public class VolumeBlockAllocationBitmap
     {
         _bitmapData = bitmapData;
         _totalBlocks = totalBlocks;
+
+        // Count free blocks using hardware-accelerated popcount on full bytes,
+        // then handle any remaining bits in the last partial byte.
+        int fullBytes = totalBlocks / 8;
+        int remainingBits = totalBlocks % 8;
+
+        int freeCount = 0;
+
+        // Process 4 bytes at a time using uint PopCount for maximum throughput.
+        ReadOnlySpan<byte> data = bitmapData.AsSpan(0, fullBytes);
+        ReadOnlySpan<uint> uints = MemoryMarshal.Cast<byte, uint>(data);
+        for (int i = 0; i < uints.Length; i++)
+        {
+            freeCount += BitOperations.PopCount(uints[i]);
+        }
+
+        // Handle remaining full bytes that didn't fit into a uint.
+        for (int i = uints.Length * 4; i < fullBytes; i++)
+        {
+            freeCount += BitOperations.PopCount(bitmapData[i]);
+        }
+
+        // Handle the last partial byte (only the top 'remainingBits' bits are valid).
+        if (remainingBits > 0 && fullBytes < bitmapData.Length)
+        {
+            byte lastByte = bitmapData[fullBytes];
+            // Mask off the low bits that don't correspond to real blocks.
+            byte mask = (byte)(0xFF << (8 - remainingBits));
+            freeCount += BitOperations.PopCount((uint)(lastByte & mask));
+        }
+
+        FreeBlockCount = freeCount;
+        UsedBlockCount = totalBlocks - freeCount;
     }
 
     /// <summary>

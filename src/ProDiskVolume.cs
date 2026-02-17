@@ -18,6 +18,11 @@ public class ProDiskVolume
     private const int BlockSize = 512;
 
     /// <summary>
+    /// A reusable zero-filled buffer for writing sparse (unallocated) blocks.
+    /// </summary>
+    private static ReadOnlySpan<byte> ZeroBlock => new byte[BlockSize];
+
+    /// <summary>
     /// The minimum size of a ProDOS volume in bytes.
     /// 2 boot blocks, 1 master directory block, 1 volume bitmap block, and
     /// at least 1 data block.
@@ -208,7 +213,7 @@ public class ProDiskVolume
     /// <returns>The file data.</returns>
     public byte[] GetFileData(FileEntry fileEntry)
     {
-        using var memoryStream = new MemoryStream();
+        using var memoryStream = new MemoryStream((int)fileEntry.Eof);
         GetFileData(fileEntry, memoryStream);
         return memoryStream.ToArray();
     }
@@ -263,8 +268,8 @@ public class ProDiskVolume
             // In this case, we write zeros instead of reading from disk.
             if (dataBlockNumber == 0)
             {
-                // Skip reading and write zeros instead.
-                outputStream.Write(new byte[bytesToWrite]);
+                // Write zeros from the shared buffer instead of allocating.
+                outputStream.Write(ZeroBlock[..bytesToWrite]);
                 totalWritten += bytesToWrite;
                 remaining -= bytesToWrite;
             }
@@ -307,7 +312,27 @@ public class ProDiskVolume
             ushort indexBlockNumber = (ushort)(lowByte | (highByte << 8));
 
             int bytesToWrite = Math.Min(remaining, 256 * 512);
-            int written = WriteIndexBlock(indexBlockNumber, outputStream, bytesToWrite);
+
+            // A block pointer of 0 indicates a sparse (unallocated) index block.
+            // All data blocks within it would also be zero, so write zeros directly
+            // instead of reading and iterating a zero-filled index block.
+            int written;
+            if (indexBlockNumber == 0)
+            {
+                while (bytesToWrite > 0)
+                {
+                    int chunk = Math.Min(bytesToWrite, BlockSize);
+                    outputStream.Write(ZeroBlock[..chunk]);
+                    bytesToWrite -= chunk;
+                }
+
+                written = Math.Min(remaining, 256 * 512);
+            }
+            else
+            {
+                written = WriteIndexBlock(indexBlockNumber, outputStream, bytesToWrite);
+            }
+
             totalWritten += written;
             remaining -= written;
         }
@@ -385,7 +410,7 @@ public class ProDiskVolume
         }
 
         var extendedKeyBlock = GetExtendedKeyBlock(fileEntry.KeyPointer);
-        using var memoryStream = new MemoryStream();
+        using var memoryStream = new MemoryStream((int)extendedKeyBlock.DataFork.Eof);
         WriteForkData(extendedKeyBlock.DataFork, memoryStream);
         return memoryStream.ToArray();
     }
@@ -422,7 +447,7 @@ public class ProDiskVolume
         }
 
         var extendedKeyBlock = GetExtendedKeyBlock(fileEntry.KeyPointer);
-        using var memoryStream = new MemoryStream();
+        using var memoryStream = new MemoryStream((int)extendedKeyBlock.ResourceFork.Eof);
         WriteForkData(extendedKeyBlock.ResourceFork, memoryStream);
         return memoryStream.ToArray();
     }
@@ -497,9 +522,6 @@ public class ProDiskVolume
         }
 
         _stream.Seek(blockOffsetWithinStream, SeekOrigin.Begin);
-        if (_stream.Read(buffer) != buffer.Length)
-        {
-            throw new IOException($"Failed to read block {blockNumber} from stream.");
-        }
+        _stream.ReadExactly(buffer);
     }
 }
