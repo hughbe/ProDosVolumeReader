@@ -135,10 +135,7 @@ public class ProDiskVolume
 
         // Skip the first four bytes (the block pointers).
         _stream.Seek(blockOffsetWithinStream + 4, SeekOrigin.Begin);
-        if (_stream.Read(buffer) != buffer.Length)
-        {
-            throw new IOException("Failed to read subdirectory block from stream.");
-        }
+        _stream.ReadExactly(buffer);
 
         var header = new SubdirectoryHeader(buffer);
         return EnumerateEntries(fileEntry.KeyPointer, header.FileCount);
