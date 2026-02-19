@@ -35,11 +35,7 @@ public class GsOsResourceFork
         // Structure documented in https://dn790003.ca.archive.org/0/items/Apple_IIGS_Toolbox_Reference_vol_3/Apple_IIGS_Toolbox_Reference_vol_3.pdf
         // and https://ciderpress2.com/formatdoc/ResourceFork-notes.html
         Span<byte> headerData = stackalloc byte[GsOsResourceForkHeader.Size];
-        int bytesRead = stream.Read(headerData);
-        if (bytesRead != GsOsResourceForkHeader.Size)
-        {
-            throw new InvalidDataException("Unable to read complete Resource Fork header.");
-        }
+        stream.ReadExactly(headerData);
 
         Header = new GsOsResourceForkHeader(headerData);
 
@@ -52,12 +48,7 @@ public class GsOsResourceFork
         Span<byte> mapData = Header.MapSize <= 1024
             ? stackalloc byte[(int)Header.MapSize]
             : new byte[Header.MapSize];
-
-        if (stream.Read(mapData) != Header.MapSize)
-        {
-            throw new InvalidDataException("Unable to read complete Resource Fork map.");
-        }
-
+        stream.ReadExactly(mapData);
         Map = new GsOsResourceForkMap(mapData);
     }
 
